@@ -31,17 +31,17 @@ def scrape_linkedin(job_title, location):
     time.sleep(5)
     
     jobs = []
-    job_cards = driver.find_elements(By.CLASS_NAME, 'result-card')
+    job_cards = driver.find_elements(By.CSS_SELECTOR, '.jobs-search__results-list li')
     
     if not job_cards:
         print("No job cards found")
     
     for job_card in job_cards:
         try:
-            title = job_card.find_element(By.CLASS_NAME, 'result-card__title').text.strip()
-            company = job_card.find_element(By.CLASS_NAME, 'result-card__subtitle').text.strip()
-            location = job_card.find_element(By.CLASS_NAME, 'job-result-card__location').text.strip()
-            link = job_card.find_element(By.CLASS_NAME, 'result-card__full-card-link').get_attribute('href')
+            title = job_card.find_element(By.CSS_SELECTOR, 'h3.base-search-card__title').text.strip()
+            company = job_card.find_element(By.CSS_SELECTOR, 'h4.base-search-card__subtitle').text.strip()
+            location = job_card.find_element(By.CSS_SELECTOR, 'span.job-search-card__location').text.strip()
+            link = job_card.find_element(By.CSS_SELECTOR, 'a.base-card__full-link').get_attribute('href')
             jobs.append({'title': title, 'company': company, 'location': location, 'link': link})
         except Exception as e:
             print(f"Error parsing job card: {e}")
