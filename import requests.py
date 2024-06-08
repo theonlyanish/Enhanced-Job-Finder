@@ -21,6 +21,53 @@ negative_keywords = {
     'cloud': -5,
 }
 
+experience_filter = {
+    "3+ years": True,
+    "more than three years": True,
+    "over 3 years": True,
+    "three to five years": True,
+    "3-5 years": True,
+    "3 to 5 years": True,
+    "4+ years": True,
+    "4-6 years": True,
+    "5+ years": True,
+    "5-7 years": True,
+    "5 to 7 years": True,
+    "six years": True,
+    "more than 3 years": True,
+    "several years": True,
+    "senior": True,
+    "advanced experience": True,
+}
+
+exclude_cities = {
+    "queensland": True,
+    "sydney": True,
+    "canberra": True,
+    "perth": True,
+    "brisbane": True,
+    "adelaide": True,
+    "darwin": True,
+    "hobart": True
+}
+
+include_keywords = {
+    "melbourne": True,
+    "remote": True,
+    "work from home": True,
+    "telecommute": True,
+    "virtual position": True,
+    "flexible location": True,
+    "nationwide": True,
+    "work anywhere": True,
+    "location flexible": True,
+    "location independent": True,
+    "distributed team": True,
+    "global team": True,
+    "remote option": True,
+    "anywhere in australia": True
+}
+
 def scrape_linkedin(job_title, location):
     options = Options()
     options.headless = True  # Run Chrome in headless mode
@@ -44,7 +91,8 @@ def scrape_linkedin(job_title, location):
             company = job_card.find_element(By.CSS_SELECTOR, 'h4.base-search-card__subtitle').text.strip()
             location = job_card.find_element(By.CSS_SELECTOR, 'span.job-search-card__location').text.strip()
             link = job_card.find_element(By.CSS_SELECTOR, 'a.base-card__full-link').get_attribute('href')
-            jobs.append({'title': title, 'company': company, 'location': location, 'link': link})
+            job_description = job_card.find_element(By.CSS_SELECTOR, '.base-search-card__snippet').text.strip()
+            jobs.append({'title': title, 'company': company, 'location': location, 'link': link, 'description': job_description})
         except Exception as e:
             print(f"Error parsing job card on LinkedIn: {e}")
             continue
@@ -75,7 +123,8 @@ def scrape_seek(job_title, location):
             company = job_card.find('span', {'class': 'job-company'}).get_text(strip=True)
             location = job_card.find('div', {'data-automation': 'jobCard-location'}).get_text(strip=True)
             link = 'https://www.seek.com.au' + job_card.find('a', {'data-automation': 'jobTitle'})['href']
-            jobs.append({'title': title, 'company': company, 'location': location, 'link': link})
+            job_description = job_card.find('div', {'data-automation': 'jobShortDescription'}).get_text(strip=True)
+            jobs.append({'title': title, 'company': company, 'location': location, 'link': link, 'description': job_description})
         except Exception as e:
             print(f"Error parsing job card on Seek: {e}")
             continue
@@ -105,7 +154,8 @@ def scrape_jora(job_title, location):
             company = job_card.find('span', class_='job-company').get_text(strip=True)
             location = job_card.find('a', class_='job-location').get_text(strip=True)
             link = 'https://au.jora.com' + job_card.find('a', class_='job-link')['href']
-            jobs.append({'title': title, 'company': company, 'location': location, 'link': link})
+            job_description = job_card.find('div', class_='job-abstract').get_text(strip=True)
+            jobs.append({'title': title, 'company': company, 'location': location, 'link': link, 'description': job_description})
         except Exception as e:
             print(f"Error parsing job card on Jora: {e}")
             continue
@@ -122,9 +172,34 @@ def score_job(title):
             score += points
     return score
 
-def filter_and_score_jobs(jobs):
-    scored_jobs = []
+def filter_jobs(jobs):
+    filtered_jobs = []
+
     for job in jobs:
+        description = job['description'].lower()
+        location = job['location'].lower()
+        
+        # Exclude based on experience
+        exclude = any(term.lower() in description for term in experience_filter)
+        
+        # Check for exclusion cities unless remote
+        exclude_city = any(city.lower() in location for city in exclude_cities)
+        include = any(keyword.lower() in description for keyword in include_keywords)
+        
+        if exclude and not include:
+            continue
+        
+        if exclude_city and not include:
+            continue
+
+        filtered_jobs.append(job)
+
+    return filtered_jobs
+
+def filter_and_score_jobs(jobs):
+    filtered_jobs = filter_jobs(jobs)
+    scored_jobs = []
+    for job in filtered_jobs:
         score = score_job(job['title'])
         if score > 0:
             job['score'] = score
