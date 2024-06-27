@@ -91,8 +91,18 @@ def scrape_linkedin(job_title, location):
             company = job_card.find_element(By.CSS_SELECTOR, 'h4.base-search-card__subtitle').text.strip()
             location = job_card.find_element(By.CSS_SELECTOR, 'span.job-search-card__location').text.strip()
             link = job_card.find_element(By.CSS_SELECTOR, 'a.base-card__full-link').get_attribute('href')
-            job_description = job_card.find_element(By.CSS_SELECTOR, '.base-search-card__snippet').text.strip()
+            
+            # Navigate to the job detail page to get the job description
+            driver.get(link)
+            time.sleep(3)  # Wait for the job description to load
+            
+            job_description = driver.find_element(By.CSS_SELECTOR, 'div.jobs-description__content').text.strip()
+            
             jobs.append({'title': title, 'company': company, 'location': location, 'link': link, 'description': job_description})
+            
+            # Navigate back to the job listings page
+            driver.back()
+            time.sleep(3)
         except Exception as e:
             print(f"Error parsing job card on LinkedIn: {e}")
             continue
